@@ -7,7 +7,7 @@ from datetime import datetime
 # importing modules of the biometric system
 from face_detection import detect_face
 from feature_extraction import LBP
-from models import ELM
+#from models import ELM
 
 
 from fastapi import FastAPI, HTTPException
