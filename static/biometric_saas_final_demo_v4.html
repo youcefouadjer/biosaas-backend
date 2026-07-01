@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BioSaaS MVP — VistaFA2 + MegaMatcher (Face uniquement)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2333;
+    --surface3: #222d40;
+    --border: rgba(48,75,120,0.35);
+    --border2: rgba(59,130,246,0.30);
+    --accent: #2563eb;
+    --accent2: #1d4ed8;
+    --accent3: #06b6d4;
+    --warn: #d97706;
+    --danger: #dc2626;
+    --success: #059669;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    overflow-x: hidden;
+  }
+
+  .sidebar {
+    width: 240px;
+    min-height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-name {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .logo-sub {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-top: 2px;
+    font-family: var(--mono);
+  }
+
+  .nav { flex: 1; padding: 16px 12px; }
+  .nav-section {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 12px 8px 6px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--muted);
+    transition: all 0.15s;
+    margin-bottom: 2px;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active {
+    background: rgba(79,140,255,0.12);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  .device-status {
+    margin: 12px;
+    padding: 12px;
+    background: var(--surface2);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .device-label {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    font-family: var(--mono);
+  }
+  .device-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .device-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--success);
+    display: inline-block;
+    margin-right: 6px;
+    box-shadow: 0 0 6px var(--success);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .device-info { font-size: 11px; color: var(--muted); margin-top: 3px; font-family: var(--mono); }
+
+  .main {
+    margin-left: 240px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .topbar {
+    height: 60px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 28px;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .topbar-title { font-size: 16px; font-weight: 600; flex: 1; }
+  .badge {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+    font-family: var(--mono);
+  }
+  .badge-blue { background: rgba(79,140,255,0.15); color: var(--accent); border: 1px solid rgba(79,140,255,0.3); }
+  .badge-green { background: rgba(0,214,143,0.12); color: var(--success); border: 1px solid rgba(0,214,143,0.25); }
+  .badge-warn { background: rgba(245,166,35,0.12); color: var(--warn); border: 1px solid rgba(245,166,35,0.25); }
+
+  .content { padding: 28px; flex: 1; }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 24px;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .stat-label { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .stat-value { font-size: 28px; font-weight: 700; letter-spacing: -1px; }
+  .stat-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  .camera-panel {
+    position: relative;
+    background: #060810;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    aspect-ratio: 4/3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .cam-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .scan-frame {
+    width: 200px;
+    height: 200px;
+    position: relative;
+  }
+  .scan-corner {
+    position: absolute;
+    width: 24px; height: 24px;
+    border-color: var(--accent3);
+    border-style: solid;
+    border-width: 0;
+  }
+  .scan-corner.tl { top:0; left:0; border-top-width:3px; border-left-width:3px; border-radius:4px 0 0 0; }
+  .scan-corner.tr { top:0; right:0; border-top-width:3px; border-right-width:3px; border-radius:0 4px 0 0; }
+  .scan-corner.bl { bottom:0; left:0; border-bottom-width:3px; border-left-width:3px; border-radius:0 0 0 4px; }
+  .scan-corner.br { bottom:0; right:0; border-bottom-width:3px; border-right-width:3px; border-radius:0 0 4px 0; }
+
+  .scan-line {
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent3), transparent);
+    animation: scan 2.5s ease-in-out infinite;
+    box-shadow: 0 0 8px var(--accent3);
+  }
+  @keyframes scan {
+    0%   { top: 0; opacity: 0.8; }
+    50%  { top: 100%; opacity: 1; }
+    100% { top: 0; opacity: 0.8; }
+  }
+
+  .cam-status {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+    text-align: center;
+  }
+  .cam-quality {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    font-family: var(--mono);
+  }
+  .qual-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .qual-bar {
+    width: 40px; height: 4px;
+    background: var(--surface3);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .qual-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--accent3);
+    transition: width 0.3s;
+  }
+
+  .steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 28px;
+  }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+  }
+  .step-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1.5px solid var(--border2);
+    color: var(--muted);
+    flex-shrink: 0;
+    transition: all 0.3s;
+  }
+  .step.done .step-num { background: var(--success); border-color: var(--success); color: #000; }
+  .step.active .step-num { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 0 12px rgba(79,140,255,0.4); }
+  .step-label { font-size: 13px; color: var(--muted); }
+  .step.active .step-label { color: var(--text); font-weight: 500; }
+  .step-line { flex: 1; height: 1px; background: var(--border); margin: 0 8px; }
+
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; display: block; letter-spacing: 0.5px; }
+  .form-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: var(--accent); }
+  .form-select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    outline: none;
+    appearance: none;
+  }
+
+  .btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+  }
+  .btn-primary:hover { background: #3a7aff; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(79,140,255,0.35); }
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { background: var(--surface3); }
+  .btn-success { background: var(--success); color: #000; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-sm { padding: 6px 14px; font-size: 12px; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+  .result-box {
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    display: none;
+  }
+  .result-box.match {
+    background: rgba(0,214,143,0.08);
+    border: 1px solid rgba(0,214,143,0.25);
+    display: block;
+  }
+  .result-box.nomatch {
+    background: rgba(255,77,106,0.08);
+    border: 1px solid rgba(255,77,106,0.25);
+    display: block;
+  }
+  .result-score { font-size: 48px; font-weight: 700; letter-spacing: -2px; }
+  .result-label { font-size: 14px; color: var(--muted); margin-top: 4px; }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .data-table th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(99,141,255,0.06);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .data-table tr:hover td { background: var(--surface2); }
+  .data-table tr:last-child td { border-bottom: none; }
+
+  .log-panel {
+    background: #060810;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+    height: 200px;
+    overflow-y: auto;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .log-line { padding: 3px 0; display: flex; gap: 12px; }
+  .log-time { color: var(--muted); flex-shrink: 0; }
+  .log-msg.info { color: var(--accent); }
+  .log-msg.success { color: var(--success); }
+  .log-msg.warn { color: var(--warn); }
+  .log-msg.error { color: var(--danger); }
+
+  .progress-bar {
+    height: 6px;
+    background: var(--surface3);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    transition: width 0.6s ease;
+  }
+
+  .code-block {
+    background: #060810;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text);
+    overflow-x: auto;
+  }
+  .code-kw { color: var(--accent2); }
+  .code-str { color: var(--accent3); }
+  .code-key { color: var(--accent); }
+  .code-val { color: var(--warn); }
+  .code-com { color: var(--muted); }
+
+  .endpoint-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .endpoint-card:hover { border-color: var(--border2); }
+  .method-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 5px;
+    flex-shrink: 0;
+  }
+  .method-post { background: rgba(124,92,252,0.15); color: var(--accent2); border: 1px solid rgba(124,92,252,0.3); }
+  .method-get  { background: rgba(0,214,143,0.12); color: var(--success); border: 1px solid rgba(0,214,143,0.25); }
+  .method-del  { background: rgba(255,77,106,0.12); color: var(--danger); border: 1px solid rgba(255,77,106,0.25); }
+  .endpoint-path { font-family: var(--mono); font-size: 13px; color: var(--text); flex: 1; }
+  .endpoint-desc { font-size: 12px; color: var(--muted); }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 28px;
+    width: 480px;
+    max-width: 95vw;
+  }
+  .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
+  .modal-close {
+    float: right;
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+  .tab-btn {
+    padding: 8px 16px;
+    background: none;
+    border: none;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.15s;
+  }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .flex { display: flex; }
+  .flex-between { display: flex; justify-content: space-between; align-items: center; }
+  .gap-12 { gap: 12px; }
+  .gap-16 { gap: 16px; }
+  .mb-20 { margin-bottom: 20px; }
+  .mb-24 { margin-bottom: 24px; }
+  .text-muted { color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-name">BioSaaS</div>
+    <div class="logo-sub">Biometric Platform MVP</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">Acquisition</div>
+    <div class="nav-item active" onclick="showView('enroll')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Enrôlement
+    </div>
+    <div class="nav-section">Vérification</div>
+    <div class="nav-item" onclick="showView('verify')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg>
+      Vérification 1:1
+    </div>
+    <div class="nav-item" onclick="showView('identify')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Identification 1:N
+    </div>
+    <div class="nav-section">Gestion</div>
+    <div class="nav-item" onclick="showView('users')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+      Base biométrique
+    </div>
+    <div class="nav-item" onclick="showView('hrjournal')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+      Journal RH — Pointage
+    </div>
+    <div class="nav-section">API & Logs</div>
+    <div class="nav-item" onclick="showView('api')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="16,18 22,12 16,6"/><polyline points="8,6 2,12 8,18"/></svg>
+      API RESTful
+    </div>
+    <div class="nav-item" onclick="showView('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="6" height="4"/><rect x="2" y="11" width="6" height="4"/><rect x="10" y="3" width="6" height="18"/><rect x="2" y="19" width="6" height="2"/><rect x="18" y="3" width="4" height="7"/><rect x="18" y="14" width="4" height="7"/></svg>
+      Dashboard
+    </div>
+  </nav>
+  <div class="device-status">
+    <div class="device-label">Caméra connectée</div>
+    <div class="device-name"><span class="device-dot"></span>VistaFA2</div>
+    <div class="device-info">USB 2.0 • 3MP Face</div>
+    <div class="device-info" style="margin-top:4px;">SDK MegaMatcher 12.1</div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <span class="topbar-title" id="topbar-title">Enrôlement Biométrique</span>
+    <span class="badge badge-green" id="sdk-badge">MegaMatcher OK</span>
+    <span class="badge badge-blue" id="api-badge">API v1.0</span>
+  </div>
+  <div class="content">
+
+    <!-- ENRÔLEMENT -->
+    <div class="view active" id="view-enroll">
+      <div class="steps mb-24">
+        <div class="step active" id="step1"><div class="step-num">1</div><div class="step-label">Informations</div></div>
+        <div class="step-line"></div>
+        <div class="step" id="step2"><div class="step-num">2</div><div class="step-label">Capture visage</div></div>
+        <div class="step-line"></div>
+        <div class="step" id="step3"><div class="step-num">3</div><div class="step-label">Validation</div></div>
+      </div>
+
+      <div class="grid2 gap-16">
+        <div class="card" id="panel-info">
+          <div class="card-title">Informations utilisateur</div>
+          <div class="form-group">
+            <label class="form-label">Nom complet</label>
+            <input type="text" class="form-input" id="enroll-name" placeholder="ex: Person 01" value="Person 01"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Identifiant national</label>
+            <input type="text" class="form-input" id="enroll-id" placeholder="ex: 12345678" value="DZ-1985-038472"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Rôle / Profil</label>
+            <select class="form-select" id="enroll-role">
+              <option>Administrateur</option>
+              <option>Opérateur</option>
+              <option>Agent terrain</option>
+              <option>Visiteur</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" id="enroll-email" placeholder="email@domaine.com" value="a.benali@biosecure.dz"/>
+          </div>
+          <button class="btn btn-primary" onclick="goStep2()" style="width:100%;justify-content:center;margin-top:8px;">
+            Suivant — Capture visage →
+          </button>
+        </div>
+
+        <div class="card" id="panel-face" style="display:none;">
+          <div class="card-title">Capture visage — VistaFA2</div>
+          <div class="camera-panel" id="cam-face">
+            <div class="cam-overlay">
+              <div style="position:relative; width:200px; height:240px;">
+                <svg viewBox="0 0 200 240" width="200" height="240" style="position:absolute;inset:0;opacity:0.25;">
+                  <ellipse cx="100" cy="90" rx="55" ry="70" fill="none" stroke="#4f8cff" stroke-width="1.5" stroke-dasharray="4 3"/>
+                  <path d="M55 150 Q60 200 100 220 Q140 200 145 150" fill="none" stroke="#4f8cff" stroke-width="1" stroke-dasharray="3 3"/>
+                </svg>
+                <div class="scan-frame" style="position:absolute;top:10px;left:0;">
+                  <div class="scan-corner tl"></div>
+                  <div class="scan-corner tr"></div>
+                  <div class="scan-corner bl"></div>
+                  <div class="scan-corner br"></div>
+                  <div class="scan-line" id="face-scan-line" style="animation:none;background:transparent;"></div>
+                </div>
+              </div>
+            </div>
+            <div class="cam-status" id="face-status" style="position:absolute;bottom:50px;font-size:11px;">
+              Positionnez votre visage dans le cadre
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:12px;">
+            <div class="cam-quality" style="flex:1;">
+              <div class="qual-item"><div style="font-size:10px;color:var(--muted);">Luminosité</div><div class="qual-bar"><div class="qual-fill" id="q-light" style="width:0%"></div></div></div>
+              <div class="qual-item"><div style="font-size:10px;color:var(--muted);">Netteté</div><div class="qual-bar"><div class="qual-fill" id="q-sharp" style="width:0%"></div></div></div>
+              <div class="qual-item"><div style="font-size:10px;color:var(--muted);">Position</div><div class="qual-bar"><div class="qual-fill" id="q-pos" style="width:0%"></div></div></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px;">
+            <button class="btn btn-primary" id="btn-capture-face" onclick="captureFace()" style="flex:1;justify-content:center;">📸 Capturer visage</button>
+            <button class="btn btn-secondary" onclick="goStep1()" style="flex-shrink:0;">← Retour</button>
+          </div>
+        </div>
+
+        <div class="card" id="panel-validate" style="display:none;">
+          <div class="card-title">✓ Récapitulatif & Enrôlement</div>
+          <div id="enroll-summary" style="margin-bottom:16px;"></div>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="btn btn-success" onclick="finalizeEnroll()" style="flex:1;justify-content:center;">✓ Enregistrer dans la base</button>
+            <button class="btn btn-secondary" onclick="goStep2()" style="flex-shrink:0;">← Retour</button>
+          </div>
+          <div id="enroll-result" style="margin-top:14px;"></div>
+        </div>
+
+        <div class="card" style="grid-column: 1 / -1;">
+          <div class="card-title">Journal d'acquisition — SDK MegaMatcher</div>
+          <div class="log-panel" id="enroll-log">
+            <div class="log-line"><span class="log-time">00:00:00</span><span class="log-msg info">VistaFA2 SDK initialisé — firmware v2.1.4</span></div>
+            <div class="log-line"><span class="log-time">00:00:01</span><span class="log-msg success">MegaMatcher Engine v12.1 — licence OK</span></div>
+            <div class="log-line"><span class="log-time">00:00:01</span><span class="log-msg info">Caméra USB détectée: VistaFA2 (VID:0x1357 PID:0x0051)</span></div>
+            <div class="log-line"><span class="log-time">00:00:02</span><span class="log-msg success">Prêt pour acquisition biométrique</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VÉRIFICATION 1:1 -->
+    <div class="view" id="view-verify">
+      <div class="grid2 gap-16">
+        <div class="card">
+          <div class="card-title">Vérification 1:1 — Identité déclarée</div>
+          <div class="form-group">
+            <label class="form-label">ID à vérifier</label>
+            <input type="text" class="form-input" id="verify-id" placeholder="Identifiant national" value="DZ-1985-038472"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Modalité biométrique</label>
+            <select class="form-select" id="verify-mode"><option value="face">Visage (seul)</option></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Charger une image (visage recadré)</label>
+            <input type="file" id="verify-file" accept="image/*" class="form-input" style="padding: 6px;">
+          </div>
+          <div class="camera-panel" style="height:200px;margin-bottom:12px;" id="verify-cam">
+            <div class="cam-overlay">
+              <div class="scan-frame">
+                <div class="scan-corner tl"></div>
+                <div class="scan-corner tr"></div>
+                <div class="scan-corner bl"></div>
+                <div class="scan-corner br"></div>
+              </div>
+            </div>
+            <div style="position:absolute;bottom:12px;font-size:11px;font-family:var(--mono);color:var(--muted);">En attente de capture...</div>
+          </div>
+          <button class="btn btn-primary" onclick="runVerify()" style="width:100%;justify-content:center;">🔍 Lancer la vérification</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Résultat MegaMatcher</div>
+          <div id="verify-result-box" style="margin-bottom:16px;">
+            <div style="text-align:center;padding:40px 0;color:var(--muted);font-size:14px;">En attente de vérification...</div>
+          </div>
+          <div id="verify-scores" style="display:none;">
+            <div style="margin-bottom:12px;">
+              <div class="flex-between" style="margin-bottom:4px;">
+                <span style="font-size:12px;color:var(--muted);">Score visage</span>
+                <span style="font-size:12px;font-family:var(--mono);" id="face-score-val">—</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" id="face-score-bar" style="width:0%"></div></div>
+            </div>
+            <div style="padding:10px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);font-family:var(--mono);font-size:12px;">
+              <div class="flex-between"><span style="color:var(--muted);">Score final</span><span id="fusion-score">—</span></div>
+              <div class="flex-between" style="margin-top:6px;"><span style="color:var(--muted);">Seuil décision</span><span id="threshold-display">0.98</span></div>
+              <div class="flex-between" style="margin-top:6px;"><span style="color:var(--muted);">Temps traitement</span><span id="proc-time">—</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <div class="card-title">Historique des vérifications</div>
+        <table class="data-table">
+          <thead><tr><th>Timestamp</th><th>ID</th><th>Modalité</th><th>Score</th><th>Décision</th><th>Durée</th></tr></thead>
+          <tbody id="verify-history">
+            <tr><td>2026-03-23 08:14:22</td><td>DZ-1985-038472</td><td>Visage</td><td>0.964</td><td><span class="badge badge-green">MATCH</span></td><td>312ms</td></tr>
+            <tr><td>2026-03-23 08:02:11</td><td>DZ-1992-001122</td><td>Visage</td><td>0.921</td><td><span class="badge badge-green">MATCH</span></td><td>218ms</td></tr>
+            <tr><td>2026-03-22 17:55:08</td><td>DZ-2000-553312</td><td>Visage</td><td>0.712</td><td><span class="badge badge-warn">ÉCHEC</span></td><td>145ms</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- IDENTIFICATION 1:N -->
+    <div class="view" id="view-identify">
+      <div class="grid2 gap-16">
+        <div class="card">
+          <div class="card-title">Identification 1:N — Base de données</div>
+          <div class="camera-panel" style="height:220px;margin-bottom:12px;">
+            <div class="cam-overlay">
+              <div class="scan-frame">
+                <div class="scan-corner tl"></div>
+                <div class="scan-corner tr"></div>
+                <div class="scan-corner bl"></div>
+                <div class="scan-corner br"></div>
+                <div class="scan-line" id="id-scan" style="animation:none;background:transparent;"></div>
+              </div>
+            </div>
+            <div style="position:absolute;bottom:12px;font-size:11px;font-family:var(--mono);color:var(--muted);">Prêt pour identification</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Algorithme de recherche</label>
+            <select class="form-select">
+              <option>MegaMatcher Rapid Search (MMRS)</option>
+              <option>Recherche exhaustive</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Charger une image à identifier (visage recadré)</label>
+            <input type="file" id="identify-file" accept="image/*" class="form-input" style="padding: 6px;">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Taille de la base : <strong id="db-size">0 sujets</strong></label>
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono);">Capacité MMRS: jusqu'à 50M templates/sec</div>
+          </div>
+          <button class="btn btn-primary" onclick="runIdentify()" style="width:100%;justify-content:center;">🔎 Identifier dans la base</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Candidats trouvés</div>
+          <div id="id-results">
+            <div style="text-align:center;padding:40px 0;color:var(--muted);font-size:14px;">Lancez une identification pour voir les candidats</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BASE BIOMÉTRIQUE (corrigée) -->
+    <div class="view" id="view-users">
+      <div class="flex-between mb-20">
+        <div>
+          <h2 style="font-size:20px;font-weight:600;">Base biométrique</h2>
+          <p class="text-muted" style="margin-top:4px;">Sujets enrôlés avec leurs templates</p>
+        </div>
+        <button class="btn btn-primary" onclick="showView('enroll')">+ Nouvel enrôlement</button>
+      </div>
+      <div class="card">
+        <table class="data-table">
+          <thead><tr><th>Sujet</th><th>ID National</th><th>Rôle</th><th>Face</th><th>Enrôlé le</th><th>Actions</th></tr></thead>
+          <tbody id="users-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- API -->
+    <div class="view" id="view-api">
+      <div class="grid2 gap-16">
+        <div class="card mb-20">
+          <div class="card-title">Endpoints RESTful</div>
+          <div class="endpoint-card"><span class="method-badge method-post">POST</span><span class="endpoint-path">/api/v1/enroll</span><span class="endpoint-desc">Enrôlement biométrique</span></div>
+          <div class="endpoint-card"><span class="method-badge method-post">POST</span><span class="endpoint-path">/api/v1/verify</span><span class="endpoint-desc">Vérification 1:1</span></div>
+          <div class="endpoint-card"><span class="method-badge method-post">POST</span><span class="endpoint-path">/api/v1/identify</span><span class="endpoint-desc">Identification 1:N</span></div>
+          <div class="endpoint-card"><span class="method-badge method-get">GET</span><span class="endpoint-path">/api/v1/subjects</span><span class="endpoint-desc">Liste des sujets</span></div>
+          <div class="endpoint-card"><span class="method-badge method-del">DEL</span><span class="endpoint-path">/api/v1/subjects/{id}</span><span class="endpoint-desc">Supprimer un sujet</span></div>
+          <div class="endpoint-card"><span class="method-badge method-get">GET</span><span class="endpoint-path">/api/v1/device/status</span><span class="endpoint-desc">État VistaFA2</span></div>
+        </div>
+        <div>
+          <div class="card mb-20">
+            <div class="tabs">
+              <button class="tab-btn active" onclick="switchTab(this,'tab-enroll')">Enrôlement</button>
+              <button class="tab-btn" onclick="switchTab(this,'tab-verify')">Vérification</button>
+              <button class="tab-btn" onclick="switchTab(this,'tab-response')">Réponse</button>
+            </div>
+            <div class="tab-panel active" id="tab-enroll">
+              <div class="code-block">// POST /api/v1/enroll ...</div>
+            </div>
+            <div class="tab-panel" id="tab-verify">
+              <div class="code-block">// POST /api/v1/verify ...</div>
+            </div>
+            <div class="tab-panel" id="tab-response">
+              <div class="code-block">// Réponse vérification ...</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Authentification API</div>
+            <div class="form-group">
+              <label class="form-label">Votre clé API</label>
+              <div style="display:flex;gap:8px;">
+                <input type="text" class="form-input" value="bsm_live_••••••••••••••••" readonly id="api-key-input"/>
+                <button class="btn btn-secondary" onclick="toggleKey()">Afficher</button>
+              </div>
+            </div>
+            <div style="font-size:12px;color:var(--muted);font-family:var(--mono);">Header: Authorization: Bearer &lt;API_KEY&gt;</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="view" id="view-dashboard">
+      <div class="grid4">
+        <div class="stat-card"><div class="stat-label">Sujets enrôlés</div><div class="stat-value" style="color:var(--accent);" id="dash-count">0</div><div class="stat-sub">total</div></div>
+        <div class="stat-card"><div class="stat-label">Vérifications</div><div class="stat-value" style="color:var(--accent3);">12</div><div class="stat-sub">Dernières 24h</div></div>
+        <div class="stat-card"><div class="stat-label">Taux de succès</div><div class="stat-value" style="color:var(--success);">91%</div><div class="stat-sub">FAR &lt; 0.001%</div></div>
+        <div class="stat-card"><div class="stat-label">Temps moyen</div><div class="stat-value" style="color:var(--warn);">285ms</div><div class="stat-sub">Traitement total</div></div>
+      </div>
+    </div>
+
+    <!-- JOURNAL RH -->
+    <div class="view" id="view-hrjournal">
+      <div class="grid4" style="margin-bottom:20px;">
+        <div class="stat-card" style="border-left:3px solid var(--success);"><div class="stat-label">Présents aujourd'hui</div><div class="stat-value" id="hr-stat-present" style="color:var(--success);">0</div><div class="stat-sub">sur <span id="hr-total">0</span> employés</div></div>
+        <div class="stat-card" style="border-left:3px solid var(--warn);"><div class="stat-label">Retards</div><div class="stat-value" id="hr-stat-late" style="color:var(--warn);">0</div><div class="stat-sub">Arrivée après 09:00</div></div>
+        <div class="stat-card" style="border-left:3px solid var(--danger);"><div class="stat-label">Absents</div><div class="stat-value" id="hr-stat-absent" style="color:var(--danger);">0</div><div class="stat-sub">Non enregistrés</div></div>
+        <div class="stat-card" style="border-left:3px solid var(--accent3);"><div class="stat-label">Heures moyennes</div><div class="stat-value" id="hr-stat-hours" style="color:var(--accent3);">—</div><div class="stat-sub">Durée travail / employé</div></div>
+      </div>
+      <div class="grid2 gap-16" style="margin-bottom:20px;">
+        <div class="card">
+          <div class="card-title">Pointage biométrique — Temps réel</div>
+          <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:14px;border:1px solid var(--border);">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;">Heure système</div>
+            <div id="hr-clock" style="font-size:36px;font-weight:700;letter-spacing:-1px;font-family:var(--mono);color:var(--accent3);"></div>
+            <div id="hr-date" style="font-size:12px;color:var(--muted);margin-top:2px;font-family:var(--mono);"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Employé à pointer</label>
+            <select class="form-select" id="hr-employee-select"><option value="">— Sélectionner un employé —</option></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Type d'événement</label>
+            <select class="form-select" id="hr-event-type">
+              <option value="entree">Entrée (Pointage IN)</option>
+              <option value="sortie">Sortie (Pointage OUT)</option>
+              <option value="pause">Début de pause</option>
+              <option value="retour_pause">Retour de pause</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary" onclick="hrPointage()" style="flex:1;justify-content:center;">✓ Enregistrer le pointage</button>
+            <button class="btn btn-secondary" onclick="hrSimulateAll()">⚡ Simuler journée</button>
+          </div>
+          <div id="hr-pointage-feedback" style="margin-top:12px;display:none;"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Statut du personnel — Aujourd'hui</div>
+          <div id="hr-personnel-grid" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+          <div class="card-title" style="margin-bottom:0;">Journal de pointage — Historique complet</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <select class="form-select" id="hr-filter-employee" onchange="hrRenderLog()" style="width:180px;padding:6px 10px;font-size:12px;"><option value="all">Tous les employés</option></select>
+            <select class="form-select" id="hr-filter-type" onchange="hrRenderLog()" style="width:140px;padding:6px 10px;font-size:12px;"><option value="all">Tous types</option><option value="entree">Entrées</option><option value="sortie">Sorties</option><option value="pause">Pauses</option></select>
+            <button class="btn btn-secondary btn-sm" onclick="hrExportCSV()">⬇ CSV</button>
+            <button class="btn btn-danger btn-sm" onclick="hrClearLog()">Vider</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table" id="hr-log-table">
+            <thead><tr><th style="width:150px;">Horodatage</th><th>Employé</th><th style="width:130px;">Identifiant</th><th style="width:90px;">Rôle</th><th style="width:130px;">Événement</th><th style="width:100px;">Score bio.</th><th style="width:100px;">Modalité</th><th style="width:90px;">Statut</th></tr></thead>
+            <tbody id="hr-log-tbody"><tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted);font-size:13px;">Aucun pointage — utilisez le formulaire ou simulez une journée</td></tr></tbody>
+          </table>
+        </div>
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:12px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;">Récapitulatif mensuel — Avril 2026</div>
+          <div id="hr-monthly-summary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="success-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      ✅ Enrôlement réussi
+    </div>
+    <div id="modal-content" style="font-size:14px;color:var(--muted);line-height:1.8;"></div>
+    <div style="display:flex;gap:8px;margin-top:20px;">
+      <button class="btn btn-primary" onclick="closeModal();showView('users');" style="flex:1;justify-content:center;">Voir la base biométrique</button>
+      <button class="btn btn-secondary" onclick="closeModal();resetEnroll();" style="flex:1;justify-content:center;">Nouvel enrôlement</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ====== ÉTAT ======
+let db = { subjects: [] };
+let enrollState = { step: 1, faceOk: false, faceQ: 0 };
+let apiKeyVisible = false;
+const REAL_API_KEY = 'bsm_live_AbC1dEf2GhI3jKL4mNO5pQR6';
+
+// ====== SYNCHRONISATION BACKEND ======
+function fetchSubjects() {
+  fetch('http://localhost:8000/api/v1/subjects')
+    .then(res => res.json())
+    .then(data => {
+      db.subjects = data.subjects || [];
+      refreshUsersTable();
+      document.getElementById('db-size').textContent = db.subjects.length + ' sujets';
+      document.getElementById('dash-count').textContent = db.subjects.length;
+      hrPopulateSelects();
+      hrRenderPersonnel();
+      hrUpdateStats();
+    })
+    .catch(err => console.error('Erreur chargement sujets:', err));
+}
+
+function refreshUsersTable() {
+  const tbody = document.getElementById('users-table');
+  if (db.subjects.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted);">Aucun sujet enrôlé</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = db.subjects.map(s => `
+    <tr>
+      <td>${s.name}</td>
+      <td>${s.id}</td>
+      <td><span class="badge badge-blue">${s.role ? s.role.split(' ')[0] : 'Utilisateur'}</span></td>
+      <td><span class="badge ${s.face_quality >= 80 ? 'badge-green' : 'badge-warn'}">✓ ${s.face_quality || 0}%</span></td>
+      <td>${s.date || 'N/A'}</td>
+      <td><button class="btn btn-secondary btn-sm" onclick="deleteUser('${s.id}')">Suppr.</button></td>
+    </tr>`).join('');
+}
+
+function deleteUser(id) {
+  if (!confirm(`Supprimer le sujet ${id} de la base biométrique ?`)) return;
+  fetch(`http://localhost:8000/api/v1/subjects/${id}`, { method: 'DELETE' })
+    .then(res => {
+      if (res.ok) {
+        fetchSubjects();
+        addLog('warn', `Sujet ${id} supprimé de la base`);
+      } else {
+        res.json().then(err => alert('Erreur : ' + err.detail));
+      }
+    })
+    .catch(err => alert('Erreur réseau : ' + err));
+}
+
+// ====== ENRÔLEMENT AVEC API ======
+function finalizeEnroll() {
+  const name = document.getElementById('enroll-name').value;
+  const id = document.getElementById('enroll-id').value;
+  const role = document.getElementById('enroll-role').value;
+  if (!name || !id) { addLog('warn', 'Nom et ID obligatoires'); return; }
+
+  // Image factice pour l'API (sinon on pourrait ajouter un champ file)
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#808080';
+  ctx.fillRect(0, 0, 128, 128);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+  addLog('info', `POST /api/v1/enroll — envoi vers le SaaS...`);
+  fetch('http://localhost:8000/api/v1/enroll', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      subject_id: id,
+      name: name,
+      face_image: dataUrl,
+      quality_threshold: 0.50,
+      role: role
+    })
+  })
+  .then(res => {
+    if (!res.ok) return res.json().then(err => { throw new Error(err.detail || 'Erreur serveur'); });
+    return res.json();
+  })
+  .then(data => {
+    addLog('success', `Sujet ${name} enrôlé via API — ID: ${id}`);
+    fetchSubjects();
+    document.getElementById('modal-content').innerHTML = `
+      <strong style="color:var(--text);">${name}</strong> est enrôlé avec succès.<br>
+      <code style="font-family:var(--mono);font-size:12px;color:var(--accent);">${id}</code><br><br>
+      <span>Template facial chiffré et stocké.</span>`;
+    document.getElementById('success-modal').classList.add('open');
+  })
+  .catch(err => {
+    addLog('error', `Erreur lors de l'enrôlement : ${err.message}`);
+    alert('Erreur : ' + err.message);
+  });
+}
+
+// ====== NAVIGATION ======
+function showView(v) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+  document.getElementById('topbar-title').textContent = {
+    enroll:'Enrôlement Biométrique', verify:'Vérification 1:1', identify:'Identification 1:N',
+    users:'Base Biométrique', api:'API RESTful', dashboard:'Dashboard', hrjournal:'Journal RH — Pointage automatique'
+  }[v] || v;
+  const navMap = {enroll:0, verify:1, identify:2, users:3, hrjournal:4, api:5, dashboard:6};
+  const navItems = document.querySelectorAll('.nav-item');
+  if (navItems[navMap[v]]) navItems[navMap[v]].classList.add('active');
+  if (v === 'hrjournal') { hrPopulateSelects(); hrRenderPersonnel(); hrUpdateStats(); hrRenderMonthly(); }
+  if (v === 'users') fetchSubjects();
+}
+
+// ====== ÉTAPES ENRÔLEMENT ======
+function setStep(n) {
+  enrollState.step = n;
+  for (let i = 1; i <= 3; i++) {
+    const el = document.getElementById('step'+i);
+    el.classList.remove('active','done');
+    if (i < n) el.classList.add('done');
+    if (i === n) el.classList.add('active');
+  }
+  document.getElementById('panel-info').style.display = n===1 ? 'block' : 'none';
+  document.getElementById('panel-face').style.display = n===2 ? 'block' : 'none';
+  document.getElementById('panel-validate').style.display = n===3 ? 'block' : 'none';
+}
+function goStep1() { setStep(1); }
+function goStep2() {
+  if (!document.getElementById('enroll-name').value || !document.getElementById('enroll-id').value) {
+    addLog('warn','Nom et ID obligatoires'); return;
+  }
+  setStep(2);
+  addLog('info','Initialisation capteur visage — VistaFA2 mode 3MP');
+  simulateFaceQuality();
+}
+function goStep3() {
+  setStep(3);
+  const name = document.getElementById('enroll-name').value;
+  const id = document.getElementById('enroll-id').value;
+  const role = document.getElementById('enroll-role').value;
+  const email = document.getElementById('enroll-email').value;
+  document.getElementById('enroll-summary').innerHTML = `
+    <div style="background:var(--surface2);border-radius:10px;padding:14px 16px;border:1px solid var(--border);font-size:13px;line-height:2;">
+      <div class="flex-between"><span style="color:var(--muted);">Nom</span><strong>${name}</strong></div>
+      <div class="flex-between"><span style="color:var(--muted);">ID</span><code style="font-family:var(--mono);font-size:12px;">${id}</code></div>
+      <div class="flex-between"><span style="color:var(--muted);">Rôle</span>${role}</div>
+      <div class="flex-between"><span style="color:var(--muted);">Email</span>${email}</div>
+      <div class="flex-between"><span style="color:var(--muted);">Qualité visage</span><span style="color:var(--success);">✓ ${enrollState.faceQ}%</span></div>
+    </div>`;
+}
+function simulateFaceQuality() {
+  let light=0, sharp=0, pos=0;
+  const iv = setInterval(() => {
+    light = Math.min(light + Math.random()*8, 85 + Math.random()*12);
+    sharp = Math.min(sharp + Math.random()*7, 80 + Math.random()*15);
+    pos = Math.min(pos + Math.random()*9, 82 + Math.random()*14);
+    document.getElementById('q-light').style.width = light.toFixed(0)+'%';
+    document.getElementById('q-sharp').style.width = sharp.toFixed(0)+'%';
+    document.getElementById('q-pos').style.width = pos.toFixed(0)+'%';
+  }, 100);
+  setTimeout(() => clearInterval(iv), 3000);
+}
+function captureFace() {
+  const btn = document.getElementById('btn-capture-face');
+  btn.disabled = true;
+  btn.textContent = '⏳ Analyse MegaMatcher...';
+  document.getElementById('face-scan-line').style.cssText = 'animation:scan 2.5s ease-in-out infinite;background:linear-gradient(90deg, transparent, var(--accent3), transparent);box-shadow:0 0 8px var(--accent3);';
+  document.getElementById('face-status').textContent = 'Extraction template FaceRecord ISO 19794-5...';
+  addLog('info','Capture visage: 2048×1536px, JPEG 92%');
+  setTimeout(() => {
+    const q = 88 + Math.round(Math.random()*10);
+    enrollState.faceQ = q;
+    enrollState.faceOk = true;
+    addLog('success', `Template FaceRecord extrait — qualité ${q}% — 1024 bytes`);
+    addLog('success','LiveEye anti-spoofing: VIVANT (score 0.994)');
+    document.getElementById('face-scan-line').style.cssText = '';
+    document.getElementById('face-status').innerHTML = `<span style="color:var(--success);">✓ Visage capturé — Qualité ${q}%</span>`;
+    btn.disabled = false;
+    btn.textContent = '✓ Capturé — Valider';
+    btn.onclick = goStep3;
+    btn.classList.remove('btn-primary');
+    btn.classList.add('btn-success');
+  }, 2500);
+}
+function resetEnroll() {
+  enrollState = { step:1, faceOk:false, faceQ:0 };
+  document.getElementById('enroll-name').value = '';
+  document.getElementById('enroll-id').value = '';
+  document.getElementById('btn-capture-face').className = 'btn btn-primary';
+  document.getElementById('btn-capture-face').textContent = '📸 Capturer visage';
+  document.getElementById('btn-capture-face').onclick = captureFace;
+  setStep(1);
+}
+
+// ====== VÉRIFICATION (appel API) ======
+function runVerify() {
+  const id = document.getElementById('verify-id').value;
+  const file = document.getElementById('verify-file').files[0];
+  if (!file) { alert('Veuillez sélectionner une image.'); return; }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const base64Image = e.target.result;
+    document.getElementById('verify-result-box').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">⏳ Vérification en cours...</div>';
+    document.getElementById('verify-scores').style.display = 'none';
+    fetch('http://localhost:8000/api/v1/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subject_id: id,
+        probe_face: base64Image,
+        mode: 'face',
+        threshold: 0.85
+      })
+    })
+    .then(res => {
+      if (!res.ok) return res.json().then(err => { throw new Error(err.detail || 'Erreur serveur'); });
+      return res.json();
+    })
+    .then(data => {
+      const score = data.scores.face;
+      const decision = data.decision;
+      const ms = data.processing_ms || 0;
+      const color = decision === 'MATCH' ? 'var(--success)' : 'var(--danger)';
+      document.getElementById('verify-result-box').innerHTML = `
+        <div style="text-align:center;padding:24px 0;">
+          <div style="font-size:52px;font-weight:700;color:${color};letter-spacing:-2px;">${score.toFixed(3)}</div>
+          <div style="font-size:22px;font-weight:600;color:${color};margin-top:4px;">${decision}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:6px;font-family:var(--mono);">${data.subject || 'Sujet non trouvé'}</div>
+        </div>`;
+      document.getElementById('face-score-val').textContent = score.toFixed(3);
+      document.getElementById('fusion-score').textContent = data.scores.fusion.toFixed(3);
+      document.getElementById('proc-time').textContent = ms + 'ms';
+      document.getElementById('face-score-bar').style.width = (score * 100) + '%';
+      document.getElementById('verify-scores').style.display = 'block';
+      const tbody = document.getElementById('verify-history');
+      const now = new Date().toISOString().replace('T',' ').split('.')[0];
+      const row = document.createElement('tr');
+      row.innerHTML = `<td>${now}</td><td>${id}</td><td>Visage</td><td>${score.toFixed(3)}</td><td><span class="badge ${decision === 'MATCH' ? 'badge-green' : 'badge-warn'}">${decision}</span></td><td>${ms}ms</td>`;
+      tbody.insertBefore(row, tbody.firstChild);
+    })
+    .catch(err => {
+      document.getElementById('verify-result-box').innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);">❌ Erreur : ${err.message}</div>`;
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+// ====== IDENTIFICATION (appel API) ======
+function runIdentify() {
+  const file = document.getElementById('identify-file').files[0];
+  if (!file) { alert('Veuillez sélectionner une image.'); return; }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const base64Image = e.target.result;
+    document.getElementById('id-results').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">⏳ Recherche MMRS en cours...</div>';
+    const scanLine = document.getElementById('id-scan');
+    scanLine.style.cssText = 'animation:scan 2.5s ease-in-out infinite;background:linear-gradient(90deg, transparent, var(--accent3), transparent);box-shadow:0 0 8px var(--accent3);';
+    fetch('http://localhost:8000/api/v1/identify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ probe_face: base64Image, max_candidates: 5 })
+    })
+    .then(res => {
+      if (!res.ok) return res.json().then(err => { throw new Error(err.detail || 'Erreur serveur'); });
+      return res.json();
+    })
+    .then(data => {
+      scanLine.style.cssText = '';
+      const candidates = data.candidates || [];
+      if (candidates.length === 0) {
+        document.getElementById('id-results').innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);">Aucun candidat trouvé dans la base.</div>`;
+        return;
+      }
+      document.getElementById('id-results').innerHTML = candidates.map(c => `
+        <div style="background:var(--surface2);border-radius:10px;padding:12px 16px;margin-bottom:8px;border:1px solid ${c.rank===1?'var(--border2)':'var(--border)'};display:flex;align-items:center;gap:12px;">
+          <div style="font-size:20px;font-weight:700;color:${c.rank===1?'var(--accent3)':'var(--muted)'};min-width:24px;">${c.rank}</div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:500;">${c.name}</div>
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono);">${c.id}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:18px;font-weight:700;color:${c.rank===1?'var(--success)':'var(--muted)'};">${c.score}</div>
+            <div style="font-size:11px;color:var(--muted);">Score</div>
+          </div>
+        </div>`).join('') + `<div style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px;font-family:var(--mono);">
+          Recherche sur ${data.total_subjects} sujets — ${data.processing_ms || 150}ms — MMRS
+        </div>`;
+    })
+    .catch(err => {
+      scanLine.style.cssText = '';
+      document.getElementById('id-results').innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);">❌ Erreur : ${err.message}</div>`;
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+// ====== LOGS ======
+function addLog(type, msg) {
+  const panel = document.getElementById('enroll-log');
+  const now = new Date().toTimeString().split(' ')[0];
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = `<span class="log-time">${now}</span><span class="log-msg ${type}">${msg}</span>`;
+  panel.appendChild(line);
+  panel.scrollTop = panel.scrollHeight;
+}
+
+// ====== TABS ======
+function switchTab(btn, id) {
+  btn.closest('.card').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.closest('.card').querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+// ====== API KEY ======
+function toggleKey() {
+  apiKeyVisible = !apiKeyVisible;
+  document.getElementById('api-key-input').value = apiKeyVisible ? REAL_API_KEY : 'bsm_live_••••••••••••••••';
+}
+
+// ====== JOURNAL RH ======
+const hrLog = [];
+const hrDaysData = {};
+const hrEventLabels = {
+  entree: { label: 'Entrée', color: 'var(--success)', icon: '→' },
+  sortie: { label: 'Sortie', color: 'var(--danger)', icon: '←' },
+  pause: { label: 'Pause', color: 'var(--warn)', icon: '⏸' },
+  retour_pause: { label: 'Retour pause', color: 'var(--accent3)', icon: '▶' }
+};
+
+function hrInit() {
+  hrUpdateClock();
+  setInterval(hrUpdateClock, 1000);
+  hrPopulateSelects();
+  hrRenderPersonnel();
+  hrRenderMonthly();
+}
+function hrUpdateClock() {
+  const now = new Date();
+  const clock = document.getElementById('hr-clock');
+  const dateEl = document.getElementById('hr-date');
+  if (!clock) return;
+  clock.textContent = now.toTimeString().slice(0, 8);
+  const days = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  dateEl.textContent = `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+}
+function hrPopulateSelects() {
+  const sel = document.getElementById('hr-employee-select');
+  const filterSel = document.getElementById('hr-filter-employee');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Sélectionner un employé —</option>';
+  if (filterSel) filterSel.innerHTML = '<option value="all">Tous les employés</option>';
+  db.subjects.forEach(s => {
+    sel.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+    if (filterSel) filterSel.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+  });
+  document.getElementById('hr-total').textContent = db.subjects.length;
+}
+function hrPointage() {
+  const empId = document.getElementById('hr-employee-select').value;
+  const eventType = document.getElementById('hr-event-type').value;
+  const fb = document.getElementById('hr-pointage-feedback');
+  if (!empId) {
+    fb.style.display = 'block';
+    fb.innerHTML = '<div style="background:rgba(220,38,38,0.1);border:1px solid rgba(220,38,38,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--danger);">⚠ Veuillez sélectionner un employé.</div>';
+    return;
+  }
+  const subj = db.subjects.find(s => s.id === empId);
+  const now = new Date();
+  const timestamp = now.toISOString().replace('T',' ').split('.')[0];
+  const score = (0.87 + Math.random()*0.11).toFixed(3);
+  const modality = 'Visage';
+  const isLate = eventType === 'entree' && now.getHours() >= 9;
+  const entry = { timestamp, empId, name: subj.name, role: subj.role, event: eventType, score, modality, late: isLate, date: now.toISOString().split('T')[0] };
+  hrLog.unshift(entry);
+  const today = now.toISOString().split('T')[0];
+  if (!hrDaysData[empId]) hrDaysData[empId] = {};
+  if (!hrDaysData[empId][today]) hrDaysData[empId][today] = [];
+  hrDaysData[empId][today].push(entry);
+  fb.style.display = 'block';
+  const ev = hrEventLabels[eventType];
+  fb.innerHTML = `<div style="background:rgba(5,150,105,0.1);border:1px solid rgba(5,150,105,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--success);">
+    ✓ Pointage enregistré — <strong>${subj.name}</strong> — ${ev.label} — ${now.toTimeString().slice(0,8)}
+    ${isLate ? '<span style="color:var(--warn);margin-left:8px;">⚠ Retard signalé</span>' : ''}
+  </div>`;
+  setTimeout(() => { fb.style.display = 'none'; }, 4000);
+  hrRenderLog();
+  hrRenderPersonnel();
+  hrUpdateStats();
+}
+function hrSimulateAll() {
+  const today = new Date().toISOString().split('T')[0];
+  const baseHour = 8;
+  db.subjects.forEach((s, i) => {
+    const delayMin = Math.floor(Math.random() * 90);
+    const arrivalHour = baseHour + Math.floor(delayMin / 60);
+    const arrivalMin = delayMin % 60;
+    const isLate = arrivalHour > 9 || (arrivalHour === 9 && arrivalMin > 0);
+    const arrivalTime = `${today} ${String(arrivalHour).padStart(2,'0')}:${String(arrivalMin).padStart(2,'0')}:${String(Math.floor(Math.random()*59)).padStart(2,'0')}`;
+    const score = (0.87 + Math.random()*0.11).toFixed(3);
+    const entry = { timestamp: arrivalTime, empId: s.id, name: s.name, role: s.role, event: 'entree', score, modality: 'Visage', late: isLate, date: today };
+    hrLog.push(entry);
+    if (!hrDaysData[s.id]) hrDaysData[s.id] = {};
+    if (!hrDaysData[s.id][today]) hrDaysData[s.id][today] = [];
+    hrDaysData[s.id][today].push(entry);
+    if (Math.random() > 0.1) {
+      const depHour = arrivalHour + 8 + (Math.random() > 0.5 ? 1 : 0);
+      const depMin = Math.floor(Math.random() * 60);
+      const depTime = `${today} ${String(Math.min(depHour, 19)).padStart(2,'0')}:${String(depMin).padStart(2,'0')}:00`;
+      const depEntry = { timestamp: depTime, empId: s.id, name: s.name, role: s.role, event: 'sortie', score: (0.87 + Math.random()*0.11).toFixed(3), modality: 'Visage', late: false, date: today };
+      hrLog.push(depEntry);
+      hrDaysData[s.id][today].push(depEntry);
+    }
+  });
+  hrLog.sort((a,b) => b.timestamp.localeCompare(a.timestamp));
+  hrRenderLog();
+  hrRenderPersonnel();
+  hrUpdateStats();
+  hrRenderMonthly();
+}
+function hrRenderLog() {
+  const tbody = document.getElementById('hr-log-tbody');
+  if (!tbody) return;
+  const filterEmp = document.getElementById('hr-filter-employee').value;
+  const filterType = document.getElementById('hr-filter-type').value;
+  let filtered = hrLog.filter(e => {
+    if (filterEmp !== 'all' && e.empId !== filterEmp) return false;
+    if (filterType === 'pause' && e.event !== 'pause' && e.event !== 'retour_pause') return false;
+    if (filterType !== 'all' && filterType !== 'pause' && e.event !== filterType) return false;
+    return true;
+  });
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted);font-size:13px;">Aucun enregistrement</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(e => {
+    const ev = hrEventLabels[e.event];
+    const lateTag = e.late ? '<span style="font-size:10px;background:rgba(217,119,6,0.15);color:var(--warn);border:1px solid rgba(217,119,6,0.3);border-radius:4px;padding:1px 5px;margin-left:4px;">RETARD</span>' : '';
+    return `<tr>
+      <td style="font-family:var(--mono);font-size:12px;">${e.timestamp}</td>
+      <td><strong>${e.name}</strong>${lateTag}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--muted);">${e.empId}</td>
+      <td><span class="badge badge-blue">${e.role.split(' ')[0]}</span></td>
+      <td><span style="color:${ev.color};font-weight:500;">${ev.icon} ${ev.label}</span></td>
+      <td><span class="badge ${parseFloat(e.score)>=0.90?'badge-green':'badge-warn'}">${e.score}</span></td>
+      <td style="font-size:12px;color:var(--muted);">${e.modality}</td>
+      <td><span class="badge badge-green">OK</span></td>
+    </tr>`;
+  }).join('');
+}
+function hrRenderPersonnel() {
+  const grid = document.getElementById('hr-personnel-grid');
+  if (!grid) return;
+  const today = new Date().toISOString().split('T')[0];
+  grid.innerHTML = db.subjects.map(s => {
+    const dayEntries = (hrDaysData[s.id] && hrDaysData[s.id][today]) || [];
+    const hasEntree = dayEntries.some(e => e.event === 'entree');
+    const hasSortie = dayEntries.some(e => e.event === 'sortie');
+    const isLate = dayEntries.some(e => e.event === 'entree' && e.late);
+    let status, statusColor, statusBg;
+    if (hasSortie) { status = 'Sorti'; statusColor = 'var(--muted)'; statusBg = 'rgba(100,116,139,0.1)'; }
+    else if (hasEntree && isLate) { status = 'Présent — Retard'; statusColor = 'var(--warn)'; statusBg = 'rgba(217,119,6,0.08)'; }
+    else if (hasEntree) { status = 'Présent'; statusColor = 'var(--success)'; statusBg = 'rgba(5,150,105,0.08)'; }
+    else { status = 'Absent'; statusColor = 'var(--danger)'; statusBg = 'rgba(220,38,38,0.08)'; }
+    const arrival = dayEntries.find(e => e.event === 'entree');
+    const departure = dayEntries.find(e => e.event === 'sortie');
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:8px;background:${statusBg};border:1px solid var(--border);">
+      <div style="width:36px;height:36px;border-radius:50%;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--accent);flex-shrink:0;">${s.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.name}</div>
+        <div style="font-size:11px;color:var(--muted);">${s.role}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:12px;font-weight:500;color:${statusColor};">${status}</div>
+        <div style="font-size:10px;color:var(--muted);font-family:var(--mono);">${arrival ? '→'+arrival.timestamp.slice(11,16) : '—'}${departure ? ' ←'+departure.timestamp.slice(11,16) : ''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function hrUpdateStats() {
+  const today = new Date().toISOString().split('T')[0];
+  let present = 0, late = 0, totalHours = 0, counted = 0;
+  db.subjects.forEach(s => {
+    const dayEntries = (hrDaysData[s.id] && hrDaysData[s.id][today]) || [];
+    if (dayEntries.some(e => e.event === 'entree')) present++;
+    if (dayEntries.some(e => e.event === 'entree' && e.late)) late++;
+    const arr = dayEntries.find(e => e.event === 'entree');
+    const dep = dayEntries.find(e => e.event === 'sortie');
+    if (arr && dep) {
+      const h = (new Date('1970-01-01 '+dep.timestamp.slice(11)) - new Date('1970-01-01 '+arr.timestamp.slice(11))) / 3600000;
+      totalHours += h; counted++;
+    }
+  });
+  document.getElementById('hr-stat-present').textContent = present;
+  document.getElementById('hr-stat-late').textContent = late;
+  document.getElementById('hr-stat-absent').textContent = db.subjects.length - present;
+  document.getElementById('hr-stat-hours').textContent = counted > 0 ? (totalHours/counted).toFixed(1)+'h' : '—';
+}
+function hrRenderMonthly() {
+  const el = document.getElementById('hr-monthly-summary');
+  if (!el) return;
+  el.innerHTML = db.subjects.map(s => {
+    const days = hrDaysData[s.id] ? Object.keys(hrDaysData[s.id]).length : 0;
+    const absences = Math.max(0, 22 - days - Math.floor(Math.random()*3));
+    return `<div style="background:var(--surface2);border-radius:8px;padding:12px;border:1px solid var(--border);">
+      <div style="font-size:12px;font-weight:600;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.name}</div>
+      <div style="font-size:11px;color:var(--muted);">Présences: <span style="color:var(--success);font-weight:600;">${days || Math.floor(15+Math.random()*5)}</span></div>
+      <div style="font-size:11px;color:var(--muted);">Absences: <span style="color:var(--danger);font-weight:600;">${absences}</span></div>
+      <div style="font-size:11px;color:var(--muted);">Retards: <span style="color:var(--warn);font-weight:600;">${Math.floor(Math.random()*4)}</span></div>
+    </div>`;
+  }).join('');
+}
+function hrClearLog() {
+  if (confirm('Vider tout le journal de pointage ?')) {
+    hrLog.length = 0;
+    Object.keys(hrDaysData).forEach(k => delete hrDaysData[k]);
+    hrRenderLog();
+    hrRenderPersonnel();
+    hrUpdateStats();
+  }
+}
+function hrExportCSV() {
+  const header = 'Horodatage,Employé,Identifiant,Rôle,Événement,Score,Modalité,Statut\n';
+  const rows = hrLog.map(e => `${e.timestamp},${e.name},${e.empId},${e.role},${hrEventLabels[e.event].label},${e.score},${e.modality},OK`).join('\n');
+  const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'journal_rh_pointage.csv'; a.click();
+}
+
+// ====== MODAL ======
+function closeModal() { document.getElementById('success-modal').classList.remove('open'); }
+
+// ====== INIT ======
+window.addEventListener('load', () => {
+  fetchSubjects();
+  hrInit();
+});
+</script>
+</body>
+</html>

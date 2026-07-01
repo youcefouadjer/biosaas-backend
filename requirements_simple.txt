@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+python-multipart
+Pillow
+numpy
+scikit-image
+scikit-learn
+opencv-python
+pydantic
+python-jose
+passlib
+python-dotenv
+ultralytics
