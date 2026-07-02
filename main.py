@@ -126,12 +126,36 @@ async def startup_event():
     model_path = BASE_DIR / "models" / "face_elm_bba.pkl"
     if not model_path.exists():
         MODEL = {'mask': np.ones(800, dtype=bool)[:411]}
-        print("⚠️ Modèle non trouvé, utilisation d'un masque factice.")
+        print("⚠️ Modèle non trouvé, utilisation d'un masque similaire.")
     else:
-        with open(model_path, 'rb') as f:
-            MODEL = pickle.load(f)
-        print(f"✅ Modèle chargé: {model_path}")
-        print(f"   Masque longueur: {len(MODEL.get('mask', []))}")
+        try:
+            with open(model_path, 'rb') as f:
+                data = pickle.load(f)
+                # Si c'est un dict avec 'mask', on le prend
+                if isinstance(data, dict) and 'mask' in data:
+                    MODEL = {'mask': data['mask']}
+                    print(f"✅ Masque chargé (longueur {len(MODEL['mask'])})")
+                else:
+                    # Fallback : masque factice
+                    MODEL = {'mask': np.ones(800, dtype=bool)[:411]}
+                    print("⚠️ Fichier modèle inattendu, masque factice utilisé.")
+        except Exception as e:
+            print(f"❌ Erreur de chargement du modèle: {e}")
+            MODEL = {'mask': np.ones(800, dtype=bool)[:411]}
+            print("⚠️ Utilisation du masque de remplacement.")
+
+#@app.on_event("startup")
+#async def startup_event():
+    #global MODEL
+    #model_path = BASE_DIR / "models" / "face_elm_bba.pkl"
+    #if not model_path.exists():
+        #MODEL = {'mask': np.ones(800, dtype=bool)[:411]}
+        #print("⚠️ Modèle non trouvé, utilisation d'un masque factice.")
+    #else:
+        #with open(model_path, 'rb') as f:
+            #MODEL = pickle.load(f)
+        #print(f"✅ Modèle chargé: {model_path}")
+        #print(f"   Masque longueur: {len(MODEL.get('mask', []))}")
 
 # ---------- API Endpoints ----------
 elm_classifier = ELM(5000, 300)
