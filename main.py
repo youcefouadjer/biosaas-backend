@@ -117,6 +117,24 @@ app = FastAPI(title="BioSaaS Biometric API", version="1.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True,
                    allow_methods=["*"], allow_headers=["*"])
 
+
+@app.get("/debug/images")
+async def debug_images():
+    import os
+    from pathlib import Path
+    images_dir = Path(__file__).parent.absolute() / "backend" / "images"
+    if not images_dir.exists():
+        return {"error": f"Le dossier {images_dir} n'existe pas"}
+    files = []
+    for root, dirs, filenames in os.walk(images_dir):
+        for f in filenames:
+            files.append(str(Path(root) / f))
+    return {
+        "directory": str(images_dir),
+        "exists": images_dir.exists(),
+        "files": files[:20]  # limite à 20 fichiers
+    }
+
 images_dir = Path(__file__).parent / "backend" / "images"
 if images_dir.exists():
     app.mount("/images", StaticFiles(directory=str(images_dir)), name="images")
