@@ -136,14 +136,29 @@ async def debug_images():
         "files": files[:20]  # limite à 20 fichiers
     }
 
-images_dir = Path(__file__).parent / "backend" / "images"
+#images_dir = Path(__file__).parent / "backend" / "images"
+
+# images_dir = Path(__file__).parent / "images"
+# app.mount("/images", StaticFiles(directory=str(images_dir)), name="images")
+
+# print(f"✅ Dossier images monté sur /images depuis {images_dir}")
+# if images_dir.exists():
+#     #app.mount("/images", StaticFiles(directory=str(images_dir)), name="images")
+#     app.mount("/images", StaticFiles(directory=str(images_dir)), name="images")
+#     print(f"✅ Dossier images monté : {images_dir}")
+# else:
+#     print(f"⚠️ Dossier images introuvable : {images_dir}")
+
+# Chemin vers le dossier images
+images_dir = Path(__file__).parent / "images"
+
+# Montage uniquement si le dossier existe
 if images_dir.exists():
-    #app.mount("/images", StaticFiles(directory=str(images_dir)), name="images")
     app.mount("/images", StaticFiles(directory=str(images_dir)), name="images")
-    print(f"✅ Dossier images monté : {images_dir}")
+    print(f"✅ Dossier images monté sur /images depuis {images_dir}")
 else:
     print(f"⚠️ Dossier images introuvable : {images_dir}")
-
+    
 MODEL = None
 SUBJECTS = []
 SUBJECT_ID_MAP = {}
