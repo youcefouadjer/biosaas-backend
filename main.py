@@ -7,7 +7,7 @@ from datetime import datetime
 # importing modules of the biometric system
 from face_detection import detect_face
 from feature_extraction import LBP
-from models import ELM
+#from models import ELM
 
 
 from fastapi import FastAPI, HTTPException
@@ -20,6 +20,7 @@ from skimage import color, feature
 import cv2
 import uvicorn
 from pathlib import Path
+from fastapi.staticfiles import StaticFiles
 
 
 # ---------- Modèles Pydantic (DÉPLACÉS ICI) ----------
@@ -116,6 +117,31 @@ app = FastAPI(title="BioSaaS Biometric API", version="1.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True,
                    allow_methods=["*"], allow_headers=["*"])
 
+
+@app.get("/debug/images")
+async def debug_images():
+    import os
+    from pathlib import Path
+    images_dir = Path(__file__).parent.absolute() / "backend" / "images"
+    if not images_dir.exists():
+        return {"error": f"Le dossier {images_dir} n'existe pas"}
+    files = []
+    for root, dirs, filenames in os.walk(images_dir):
+        for f in filenames:
+            files.append(str(Path(root) / f))
+    return {
+        "directory": str(images_dir),
+        "exists": images_dir.exists(),
+        "files": files[:20]  # limite à 20 fichiers
+    }
+
+images_dir = Path(__file__).parent / "backend" / "images"
+if images_dir.exists():
+    app.mount("/images", StaticFiles(directory=str(images_dir)), name="images")
+    print(f"✅ Dossier images monté : {images_dir}")
+else:
+    print(f"⚠️ Dossier images introuvable : {images_dir}")
+
 MODEL = None
 SUBJECTS = []
 SUBJECT_ID_MAP = {}
@@ -126,12 +152,36 @@ async def startup_event():
     model_path = BASE_DIR / "models" / "face_elm_bba.pkl"
     if not model_path.exists():
         MODEL = {'mask': np.ones(800, dtype=bool)[:411]}
-        print("⚠️ Modèle non trouvé, utilisation d'un masque factice.")
+        print("⚠️ Modèle non trouvé, utilisation d'un masque similaire.")
     else:
-        with open(model_path, 'rb') as f:
-            MODEL = pickle.load(f)
-        print(f"✅ Modèle chargé: {model_path}")
-        print(f"   Masque longueur: {len(MODEL.get('mask', []))}")
+        try:
+            with open(model_path, 'rb') as f:
+                data = pickle.load(f)
+                # Si c'est un dict avec 'mask', on le prend
+                if isinstance(data, dict) and 'mask' in data:
+                    MODEL = {'mask': data['mask']}
+                    print(f"✅ Masque chargé (longueur {len(MODEL['mask'])})")
+                else:
+                    # Fallback : masque factice
+                    MODEL = {'mask': np.ones(800, dtype=bool)[:411]}
+                    print("⚠️ Fichier modèle inattendu, masque factice utilisé.")
+        except Exception as e:
+            print(f"❌ Erreur de chargement du modèle: {e}")
+            MODEL = {'mask': np.ones(800, dtype=bool)[:411]}
+            print("⚠️ Utilisation du masque de remplacement.")
+
+#@app.on_event("startup")
+#async def startup_event():
+    #global MODEL
+    #model_path = BASE_DIR / "models" / "face_elm_bba.pkl"
+    #if not model_path.exists():
+        #MODEL = {'mask': np.ones(800, dtype=bool)[:411]}
+        #print("⚠️ Modèle non trouvé, utilisation d'un masque factice.")
+    #else:
+        #with open(model_path, 'rb') as f:
+            #MODEL = pickle.load(f)
+        #print(f"✅ Modèle chargé: {model_path}")
+        #print(f"   Masque longueur: {len(MODEL.get('mask', []))}")
 
 # ---------- API Endpoints ----------
 elm_classifier = ELM(5000, 300)
