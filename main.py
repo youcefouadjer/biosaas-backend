@@ -122,7 +122,8 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True,
 async def debug_images():
     import os
     from pathlib import Path
-    images_dir = Path(__file__).parent.absolute() / "backend" / "images"
+    #images_dir = Path(__file__).parent.absolute() / "backend" / "images"
+    images_dir = Path(__file__).parent.absolute() / "images"
     if not images_dir.exists():
         return {"error": f"Le dossier {images_dir} n'existe pas"}
     files = []
@@ -137,6 +138,7 @@ async def debug_images():
 
 images_dir = Path(__file__).parent / "backend" / "images"
 if images_dir.exists():
+    #app.mount("/images", StaticFiles(directory=str(images_dir)), name="images")
     app.mount("/images", StaticFiles(directory=str(images_dir)), name="images")
     print(f"✅ Dossier images monté : {images_dir}")
 else:
