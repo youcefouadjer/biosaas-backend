@@ -20,6 +20,7 @@ from skimage import color, feature
 import cv2
 import uvicorn
 from pathlib import Path
+from fastapi.staticfiles import StaticFiles
 
 
 # ---------- Modèles Pydantic (DÉPLACÉS ICI) ----------
@@ -115,6 +116,13 @@ BASE_DIR = Path(__file__).parent.absolute()
 app = FastAPI(title="BioSaaS Biometric API", version="1.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True,
                    allow_methods=["*"], allow_headers=["*"])
+
+images_dir = Path(__file__).parent / "backend" / "images"
+if images_dir.exists():
+    app.mount("/images", StaticFiles(directory=str(images_dir)), name="images")
+    print(f"✅ Dossier images monté : {images_dir}")
+else:
+    print(f"⚠️ Dossier images introuvable : {images_dir}")
 
 MODEL = None
 SUBJECTS = []
